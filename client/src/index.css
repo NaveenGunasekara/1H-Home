@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+:root {
+  --accent: #ff3c3c;
+  --bg: #0a0a0a;
+  --surface: #121212;
+  --text-main: #ffffff;
+  --text-muted: #888888;
+  --font-heading: 'Syncopate', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg);
+  color: var(--text-main);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
