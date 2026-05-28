@@ -19,8 +19,8 @@ const app = express();
 // Initialize MongoDB Atlas Connection
 connectDB();
 
-// Global Middleware Configs
-app.use(cors());
+// Global Middleware Configs (Allows your cross-origin React port to stream transactions)
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(express.json());
 
 // API Route Mount Ports
@@ -46,5 +46,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server executing in ${process.env.NODE_ENV} configuration on port ${PORT}`);
+  console.log(`Server executing in ${process.env.NODE_ENV || 'development'} configuration on port ${PORT}`);
 });

@@ -1,65 +1,55 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-};
-
-// Updated signature to cleanly handle Express middleware lifecycle arguments (req, res, next)
-exports.registerUser = async (req, res, next) => {
+// Public registration handler targeted by visitors via the /createaccount route
+const registerPublicUser = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
-    // 1. Check if user already exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+    // 1. Basic body verification checks
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Missing parameters. Please fill in all fields.' });
     }
 
-    // 2. Create the user with the explicitly requested role (defaults to 'admin' if sent)
-    const user = await User.create({ 
-      name, 
-      email, 
-      password,
-      role: role || 'admin' 
+    // 2. Check if user node is already provisioned
+    const userExists = await User.findOne({ email: email.toLowerCase() });
+    if (userExists) {
+      return res.status(400).json({ message: 'Email address node is already registered.' });
+    }
+
+    // 3. Force default role safely to 'Client' to avoid privilege escalations
+    const user = new User({
+      name,
+      email: email.toLowerCase(),
+      password, 
+      role: 'Client' 
     });
 
-    // 3. Return successfully registered asset details
-    res.status(201).json({
+    await user.save();
+
+    // 4. Generate security token signature payload
+    const token = jwt.sign(
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET || 'secretkey', 
+      { expiresIn: '30d' }
+    );
+
+    // 5. Dispatch success response payload matrix
+    return res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id)
+      token
     });
-  } catch (error) {
-    // Passes the validation/database error downstream to server.js error handler securely
-    next(error); 
+
+  } catch (err) {
+    console.error("Public Registration Catch Block Exception:", err.message);
+    return res.status(500).json({ message: 'Internal Server Error', error: err.message });
   }
 };
 
-// Updated signature to cleanly handle Express middleware lifecycle arguments (req, res, next)
-exports.loginUser = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-
-    // 1. Find user account by email profile mapping
-    const user = await User.findOne({ email });
-    
-    // 2. Validate password hash match integrity rules
-    if (user && (await user.matchPassword(password))) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id)
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
-    }
-  } catch (error) {
-    // Passes down any unexpected execution errors safely
-    next(error); 
-  }
+module.exports = {
+  registerPublicUser
+  // ... include your other controller targets here (like loginUser)
 };
