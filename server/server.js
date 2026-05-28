@@ -1,3 +1,7 @@
+// Force Node.js to use clean public DNS servers to resolve MongoDB Atlas SRV records
+const dns = require('node:dns');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
