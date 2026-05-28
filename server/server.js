@@ -19,8 +19,20 @@ const app = express();
 // Initialize MongoDB Atlas Connection
 connectDB();
 
-// Global Middleware Configs (Allows your cross-origin React port to stream transactions)
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+// Global Middleware Configs
+// Dynamically handles CORS whether running locally or live on production Vercel
+const allowedOrigins = ['http://localhost:3000', 'https://vercel.com'];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // API Route Mount Ports
@@ -44,7 +56,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server executing in ${process.env.NODE_ENV || 'development'} configuration on port ${PORT}`);
-});
+// CRUCIAL VERCEL FIX: Only listen to standalone ports if we are NOT running in production serverless environments
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server executing in local configuration on port ${PORT}`);
+  });
+}
+
+// Export the app module (Required for Vercel Serverless Function mapping engine)
+module.exports = app;
