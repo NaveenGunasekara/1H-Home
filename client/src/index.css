@@ -10,7 +10,12 @@
   --font-body: 'Plus Jakarta Sans', sans-serif;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+/* FIXED: Removed 'cursor: none' from universal selector */
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+}
 
 body {
   font-family: var(--font-body);
@@ -18,4 +23,17 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   overflow-x: hidden;
+}
+
+/* THE CURSOR RECOVERY FIX: 
+    Only hide default mouse when we are explicitly viewing the landing portfolio class wrapper */
+.custom-cursor-active, 
+.custom-cursor-active * {
+  cursor: none !important;
+}
+
+/* Prevent custom trailing cursor div from blocking mouse click events */
+#cursor {
+  pointer-events: none !important;
+  will-change: transform, left, top;
 }

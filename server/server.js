@@ -16,14 +16,17 @@ const reportsRoutes = require('./routes/reportsRoutes');
 
 const app = express();
 
+// Initialize MongoDB Atlas Connection
 connectDB();
 
+// Global Middleware Configs
 app.use(cors());
 app.use(express.json());
 
+// API Route Mount Ports
 app.use('/api/auth', authRoutes);
-app.use('/api/crm', crmRoutes);
-app.use('/api/inventory', inventoryRoutes);
+app.use('/api/crm', crmRoutes);             // <-- Mount point for Contact/Leads submissions
+app.use('/api/inventory', inventoryRoutes); // <-- Mount point for Public & Admin Projects
 app.use('/api/sales', salesRoutes);
 app.use('/api/purchase', purchaseRoutes);
 app.use('/api/reports', reportsRoutes);
@@ -32,10 +35,11 @@ app.get('/', (req, res) => {
   res.send('1H-Home Corporate Core API Engine Online.');
 });
 
+// Robust Error Handling Catch Engine (Patched to fix "next is not a function" breaks)
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
-    message: err.message,
+    error: err.message || 'Internal Server Error',
     stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
 });
