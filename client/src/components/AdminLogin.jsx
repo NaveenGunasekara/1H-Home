@@ -9,19 +9,30 @@ export function AdminLogin() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError(''); // Clear out any previous errors before a new attempt
+    
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
+      // CHANGED: Removed http://localhost:5000 to use relative routing for Vercel Serverless Functions
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Authentication rejected.');
       
+      // Save your admin token to session context
       localStorage.setItem('adminToken', data.token);
+      
+      // Redirect cleanly to your dashboard interface environment
       navigate('/admin');
     } catch (err) {
-      setError(err.message);
+      // Gracefully catch backend messaging or network fetch blocks
+      setError(err.message === 'Failed to fetch' 
+        ? 'Network request failed. Please check your database synchronization variables.' 
+        : err.message
+      );
     }
   };
 
@@ -32,7 +43,11 @@ export function AdminLogin() {
           EDIT.CRAFT // SYSTEM ACCESS
         </div>
         
-        {error && <p style={{ color: '#ff3c3c', fontSize: '12px', marginBottom: '16px', background: 'rgba(255,60,60,0.1)', padding: '10px', borderLeft: '2px solid #ff3c3c' }}>{error}</p>}
+        {error && (
+          <p style={{ color: '#ff3c3c', fontSize: '12px', marginBottom: '16px', background: 'rgba(255,60,60,0.1)', padding: '10px', borderLeft: '2px solid #ff3c3c', wordBreak: 'break-word' }}>
+            {error}
+          </p>
+        )}
         
         <input 
           type="email" 
