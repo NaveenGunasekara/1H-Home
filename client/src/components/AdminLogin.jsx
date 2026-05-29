@@ -12,14 +12,25 @@ export function AdminLogin() {
     setError(''); // Clear out any previous errors before a new attempt
     
     try {
-      // CHANGED: Removed http://localhost:5000 to use relative routing for Vercel Serverless Functions
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       
-      const data = await res.json();
+      // SAFE PARSING PROMPT ENGINE: Get raw text response first to guard against empty/HTML strings
+      const responseText = await res.text();
+      let data = {};
+      
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseErr) {
+          // If server throws an unexpected HTML or text string, expose it gracefully instead of crashing
+          throw new Error(`Server Response Error: ${responseText.substring(0, 60)}...`);
+        }
+      }
+      
       if (!res.ok) throw new Error(data.message || 'Authentication rejected.');
       
       // Save your admin token to session context
