@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 // ========================================================
-// 🔓 PUBLIC ENDPOINTS (No Token Needed to Access These)
+// PUBLIC ENDPOINTS (No Token Needed to Access These)
 // ========================================================
 
 // PUBLIC ENDPOINT: Create Account Form Submission
@@ -22,17 +22,15 @@ router.post('/register', async (req, res, next) => {
       return res.status(400).json({ message: 'Email address node is already provisioned.' });
     }
 
-    // New registrations from the public page are safely assigned the 'Client' role
     const newUser = new User({
       name,
       email: email.toLowerCase(),
-      password, // Automatically hashed via your pre-save hook schema model
+      password,
       role: 'Client'
     });
 
     await newUser.save();
 
-    // Generate token so the user gets automatically authenticated on completion
     const token = jwt.sign(
       { id: newUser._id, role: newUser.role },
       process.env.JWT_SECRET || 'secretkey',
@@ -54,17 +52,25 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
+    console.log('=== LOGIN DEBUG ===');
+    console.log('Email received:', email);
+    console.log('Password received:', password);
+
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide both email and password paths.' });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });
+    console.log('User found:', !!user);
+    console.log('Stored hash:', user ? user.password : 'NO USER');
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials provided.' });
     }
 
-    // Compare encrypted input match checks
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('bcrypt match result:', isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials provided.' });
     }
@@ -87,7 +93,7 @@ router.post('/login', async (req, res, next) => {
 
 
 // ========================================================
-// 🛡️ SECURE ADMIN FILTER (Guard Middleware Layer)
+// SECURE ADMIN FILTER (Guard Middleware Layer)
 // ========================================================
 const verifyAdmin = async (req, res, next) => {
   try {
@@ -98,7 +104,7 @@ const verifyAdmin = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secretkey');
-    
+
     const searchId = decoded.id || decoded._id;
     const user = await User.findById(searchId);
 
@@ -106,7 +112,6 @@ const verifyAdmin = async (req, res, next) => {
       return res.status(401).json({ message: 'Authorization error: Target account context does not exist.' });
     }
 
-    // Case-insensitive verification to prevent lockouts caused by casing differences
     if (!user.role || user.role.toLowerCase() !== 'admin') {
       return res.status(403).json({ message: 'Forbidden: Requires Admin privileges' });
     }
@@ -120,7 +125,7 @@ const verifyAdmin = async (req, res, next) => {
 
 
 // ========================================================
-// 🔒 PROTECTED CRUD ENDPOINTS (Requires Valid Admin Token)
+// PROTECTED CRUD ENDPOINTS (Requires Valid Admin Token)
 // ========================================================
 
 // CRUD 1: READ ALL
@@ -137,7 +142,7 @@ router.get('/all-users', verifyAdmin, async (req, res, next) => {
 router.post('/admin-create-user', verifyAdmin, async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
-    
+
     const userExists = await User.findOne({ email: email.toLowerCase() });
     if (userExists) {
       return res.status(400).json({ message: 'Email node is already provisioned.' });
